@@ -15,5 +15,5 @@ public class TuaierDefaultListableBeanFactory extends TuaierAbstractApplicationC
     /**
      * 存储注册信息的BeanDefinition
      */
-    private final Map<String, TuaierBeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
+    protected final Map<String, TuaierBeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>(256);
 }
