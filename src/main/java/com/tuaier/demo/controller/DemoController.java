@@ -1,10 +1,10 @@
 package com.tuaier.demo.controller;
 
 import com.tuaier.demo.service.IDemoService;
-import com.tuaier.mvc.annotation.TuaierAutowired;
-import com.tuaier.mvc.annotation.TuaierController;
-import com.tuaier.mvc.annotation.TuaierRequestMapping;
-import com.tuaier.mvc.annotation.TuaierRequestParam;
+import com.tuaier.framework.annotation.TuaierAutowired;
+import com.tuaier.framework.annotation.TuaierController;
+import com.tuaier.framework.annotation.TuaierRequestMapping;
+import com.tuaier.framework.annotation.TuaierRequestParam;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

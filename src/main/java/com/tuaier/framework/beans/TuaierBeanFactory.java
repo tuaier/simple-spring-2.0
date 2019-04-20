@@ -13,5 +13,13 @@ public interface TuaierBeanFactory {
      * @param beanName 实例名
      * @return
      */
-    Object getBean(String beanName);
+    Object getBean(String beanName) throws Exception;
+
+    /**
+     * 根据class从IOC容器获取实例bean
+     *
+     * @param clazz 实例名
+     * @return
+     */
+    Object getBean(Class<?> clazz) throws Exception;
 }

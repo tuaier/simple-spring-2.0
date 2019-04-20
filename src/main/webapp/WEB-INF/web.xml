@@ -7,11 +7,11 @@
 
     <servlet>
         <servlet-name>mvc</servlet-name>
-        <servlet-class>com.tuaier.mvc.v3.servlet.TuaierDispatcherServlet</servlet-class>
+        <servlet-class>com.tuaier.framework.webmvc.servlet.TuaierDispatcherServlet</servlet-class>
         <init-param>
             <!-- 初始化时配置文件地址 -->
             <param-name>contextConfigLocation</param-name>
-            <param-value>application.properties</param-value>
+            <param-value>classpath:application.properties</param-value>
         </init-param>
 
         <load-on-startup>1</load-on-startup>

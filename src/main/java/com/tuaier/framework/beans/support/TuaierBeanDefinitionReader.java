@@ -39,13 +39,11 @@ public class TuaierBeanDefinitionReader {
                 }
             }
         }
-
         doScanner(config.getProperty(SCAN_PACKAGE));
-
     }
 
     private void doScanner(String scanPackage) {
-        URL url = this.getClass().getClassLoader().getResource("/" + scanPackage.replaceAll("\\.", "/"));
+        URL url = this.getClass().getClassLoader().getResource(scanPackage.replaceAll("\\.", "/"));
         File classPath = new File(url.getFile());
         for (File file : classPath.listFiles()) {
             if (file.isDirectory()) {
@@ -72,11 +70,24 @@ public class TuaierBeanDefinitionReader {
      */
     public List<TuaierBeanDefinition> loadBeanDefinitions() {
         List<TuaierBeanDefinition> result = new ArrayList<>();
-        for (String className : registerBeanClasses) {
-            TuaierBeanDefinition beanDefinition = doCreateBeanDefinition(className);
-            if (beanDefinition != null) {
-                result.add(beanDefinition);
+        try {
+            for (String className : registerBeanClasses) {
+                Class<?> beanClass = Class.forName(className);
+                // 如果是一个借口不能实例化，用他的实现来实例化
+                if (beanClass.isInterface()) {
+                    continue;
+                }
+                // beanName有三种情况： 1、默认是类名首字母小写  2、自定义   3、借口注入
+                result.add(doCreateBeanDefinition(lowerFirstCase(beanClass.getSimpleName()), beanClass.getName()));
+                result.add(doCreateBeanDefinition(beanClass.getName(),beanClass.getName()));
+
+                Class<?> [] interfaces = beanClass.getInterfaces();
+                for (Class<?> i : interfaces) {
+                    result.add(doCreateBeanDefinition(i.getName(), beanClass.getName()));
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return result;
     }
@@ -84,26 +95,15 @@ public class TuaierBeanDefinitionReader {
     /**
      * 把className解析为beanDefinition
      *
-     * @param className
+     * @param factoryBeanName
+     * @param beanClassName
      * @return
      */
-    private TuaierBeanDefinition doCreateBeanDefinition(String className) {
-        try {
-            Class<?> beanClass = Class.forName(className);
-            // 接口用实现类作为beanClassName
-            if (beanClass.isInterface()) {
-                return null;
-            } else {
-                TuaierBeanDefinition beanDefinition = new TuaierBeanDefinition();
-                beanDefinition.setBeanClassName(className);
-                beanDefinition.setFactoryBeanName(lowerFirstCase(beanClass.getSimpleName()));
-
-                return beanDefinition;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+    private TuaierBeanDefinition doCreateBeanDefinition(String factoryBeanName, String beanClassName) {
+        TuaierBeanDefinition beanDefinition = new TuaierBeanDefinition();
+        beanDefinition.setBeanClassName(beanClassName);
+        beanDefinition.setFactoryBeanName(factoryBeanName);
+        return beanDefinition;
     }
 
     /**

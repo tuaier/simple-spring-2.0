@@ -1,7 +1,7 @@
 package com.tuaier.demo.service.impl;
 
 import com.tuaier.demo.service.IDemoService;
-import com.tuaier.mvc.annotation.TuaierService;
+import com.tuaier.framework.annotation.TuaierService;
 
 /**
  *
