@@ -3,6 +3,11 @@ package com.tuaier.framework.context;
 import com.tuaier.framework.annotation.TuaierAutowired;
 import com.tuaier.framework.annotation.TuaierController;
 import com.tuaier.framework.annotation.TuaierService;
+import com.tuaier.framework.aop.TuaierAopProxy;
+import com.tuaier.framework.aop.TuaierCglibAopProxy;
+import com.tuaier.framework.aop.TuaierJdkDynamicAopProxy;
+import com.tuaier.framework.aop.config.TuaierAopConfig;
+import com.tuaier.framework.aop.support.TuaierAdvisedSupport;
 import com.tuaier.framework.beans.TuaierBeanFactory;
 import com.tuaier.framework.beans.TuaierBeanWrapper;
 import com.tuaier.framework.beans.config.TuaierBeanDefinition;
@@ -25,7 +30,7 @@ public class TuaierApplicationContext extends TuaierDefaultListableBeanFactory i
 
     private TuaierBeanDefinitionReader reader;
 
-    private Map<String, Object> singletonObjects = new ConcurrentHashMap<>();
+    private Map<String, Object> factoryBeanObjectCache = new ConcurrentHashMap<>();
 
     private Map<String, TuaierBeanWrapper> factoryBeanInstanceCache = new ConcurrentHashMap<>();
 
@@ -154,17 +159,48 @@ public class TuaierApplicationContext extends TuaierDefaultListableBeanFactory i
         String className = tuaierBeanDefinition.getBeanClassName();
         Object instance = null;
         try {
-            if (this.singletonObjects.containsKey(className)) {
-                instance = this.singletonObjects.get(className);
+            if (this.factoryBeanObjectCache.containsKey(className)) {
+                instance = this.factoryBeanObjectCache.get(className);
             } else {
                 Class<?> clazz = Class.forName(className);
                 instance = clazz.newInstance();
-                this.singletonObjects.put(className, instance);
+
+                TuaierAdvisedSupport config = initializeAopConfig(tuaierBeanDefinition);
+                config.setTargetClass(clazz);
+                config.setTarget(instance);
+
+                //符合PointCut的规则的话，创建代理对象
+                if(config.pointCutMatch()) {
+                    instance = createProxy(config).getProxy();
+                }
+
+                this.factoryBeanObjectCache.put(className, instance);
+                this.factoryBeanObjectCache.put(tuaierBeanDefinition.getFactoryBeanName(),instance);
+
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         return instance;
+    }
+
+    private TuaierAopProxy createProxy(TuaierAdvisedSupport config) {
+        Class<?> targetClass = config.getTargetClass();
+        if (targetClass.getInterfaces().length > 0) {
+            return new TuaierJdkDynamicAopProxy(config);
+        }
+        return new TuaierCglibAopProxy(config);
+    }
+
+    private TuaierAdvisedSupport initializeAopConfig(TuaierBeanDefinition tuaierBeanDefinition) {
+        TuaierAopConfig config = new TuaierAopConfig();
+        config.setPointCut(this.getConfig().getProperty("pointCut"));
+        config.setAspectClass(this.getConfig().getProperty("aspectClass"));
+        config.setAspectBefore(this.getConfig().getProperty("aspectBefore"));
+        config.setAspectAfter(this.getConfig().getProperty("aspectAfter"));
+        config.setAspectAfterThrow(this.getConfig().getProperty("aspectAfterThrow"));
+        config.setAspectAfterThrowingName(this.getConfig().getProperty("aspectAfterThrowingName"));
+        return new TuaierAdvisedSupport(config);
     }
 
     public String[] getBeanDefinitionNames(){
