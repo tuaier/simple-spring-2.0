@@ -13,4 +13,6 @@ public interface IDemoService {
      * @return <code>String</code> 姓名
      */
     String getName(String name);
+
+    public String add(String x, String y) throws Exception;
 }

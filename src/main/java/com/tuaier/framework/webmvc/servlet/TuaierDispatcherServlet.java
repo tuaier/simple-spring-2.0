@@ -5,6 +5,7 @@ import com.tuaier.framework.annotation.TuaierRequestMapping;
 import com.tuaier.framework.context.TuaierApplicationContext;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +39,7 @@ public class TuaierDispatcherServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        super.doPost(req, resp);
+        doPost(req, resp);
     }
 
     @Override
@@ -51,35 +52,49 @@ public class TuaierDispatcherServlet extends HttpServlet {
         }
     }
 
-    private void doDispatch(HttpServletRequest req, HttpServletResponse resp) {
+    private void doDispatch(HttpServletRequest req, HttpServletResponse resp) throws Exception {
         //1、通过从request中拿到url匹配一个handlerMapping
-        TuaierHandlerMapping handlerMapping = getHandlerMapping(req);
-        if (handlerMapping == null) {
-//            new TuaierModelAndView();
+        TuaierHandlerMapping handler = getHandlerM(req);
+        if (handler == null) {
+            processDispatchResult(req, resp, new TuaierModelAndView("404"));
             return;
         }
         //2、准备调用前的参数
-        TuaierHandlerAdapter ha = getHandlerAdapter(handlerMapping);
+        TuaierHandlerAdapter ha = getHandlerAdapter(handler);
         //3、调用真正的方法，返回modelAndView存储了要传给页面的值和页面模板的名称
-        TuaierModelAndView mv = ha.handle(req, resp,handlerMapping);
-
+        TuaierModelAndView mv = ha.handle(req, resp,handler);
+        // 真正的输出处理
         processDispatchResult(req, resp, mv);
-        //
-        //
     }
 
-    private void processDispatchResult(HttpServletRequest req, HttpServletResponse resp, TuaierModelAndView mv) {
+    private void processDispatchResult(HttpServletRequest req, HttpServletResponse resp, TuaierModelAndView mv) throws Exception {
         //将ModelAndView转为一个Context-Type对应的html outputStrean json freemark veolcity
         if (mv == null) {
             return;
         }
+
+        if (this.viewResolvers.isEmpty()){
+            return;
+        }
+        for (TuaierViewResolver viewResolver : this.viewResolvers) {
+            TuaierView view = viewResolver.resolveViewName(mv.getViewName(), null);
+            view.render(mv.getModel(), req, resp);
+            return;
+        }
     }
 
-    private TuaierHandlerAdapter getHandlerAdapter(TuaierHandlerMapping handlerMapping) {
+    private TuaierHandlerAdapter getHandlerAdapter(TuaierHandlerMapping handler) {
+        if(this.handlerAdapters.isEmpty()) {
+            return null;
+        }
+        TuaierHandlerAdapter ha = this.handlerAdapters.get(handler);
+        if (ha.supports(handler)) {
+            return ha;
+        }
         return null;
     }
 
-    private TuaierHandlerMapping getHandlerMapping(HttpServletRequest req) {
+    private TuaierHandlerMapping getHandlerM(HttpServletRequest req) {
         if (this.handlerMappings.isEmpty()) {
             return null;
         }
@@ -99,9 +114,9 @@ public class TuaierDispatcherServlet extends HttpServlet {
     }
 
     @Override
-    public void init() throws ServletException {
+    public void init(ServletConfig config) throws ServletException {
         //1、初始化ApplicationContext
-        context = new TuaierApplicationContext(CONTEXT_CONFIG_LOCATION);
+        context = new TuaierApplicationContext(config.getInitParameter(CONTEXT_CONFIG_LOCATION));
         //2、初始化mvc九大组件
         initStrategies(context);
     }

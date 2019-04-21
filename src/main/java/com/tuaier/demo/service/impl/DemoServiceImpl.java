@@ -18,4 +18,9 @@ public class DemoServiceImpl implements IDemoService {
     public String getName(String name) {
         return "Name is " + name;
     }
+
+    @Override
+    public String add(String x, String y) throws Exception {
+        throw new Exception("异常测试");
+    }
 }
